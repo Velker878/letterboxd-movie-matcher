@@ -15,3 +15,7 @@ Web app that compares Letterboxd watchlists between users and shows the movies t
    ```bash
    git clone https://github.com/Velker878/letterboxd-movie-matcher.git
    ```
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
