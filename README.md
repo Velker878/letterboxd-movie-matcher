@@ -6,7 +6,7 @@ Web app that compares Letterboxd watchlists between users and shows the movies t
 
 - **Frontend:** HTML, CSS, JavaScript
 - **Backend:** Python (Django)
-- **Web Scraping:** BeautifulSoup (bs4)
+- **Web Scraping:** BeautifulSoup (bs4), Requests
 
 ## Getting Started
 
