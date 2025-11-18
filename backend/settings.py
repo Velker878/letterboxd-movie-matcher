@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'letterboxd_scraper'    
+    'letterboxd_scraper',    
 ]
 
 MIDDLEWARE = [
