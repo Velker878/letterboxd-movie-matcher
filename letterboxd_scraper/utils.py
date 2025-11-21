@@ -6,8 +6,7 @@ HEADERS = {"User-Agent": "Mozilla/5.0"}
 
 def validate_usernames(usernames):
     """Check which usernames are valid"""
-    valid = []
-    invalid = []
+    valid, invalid = [], []
     for username in usernames:
         url = f'{BASE_URL}/{username}/watchlist/'
         try:
@@ -18,7 +17,7 @@ def validate_usernames(usernames):
                 invalid.append(username)
         except requests.RequestException:
             invalid.append(username)
-        time.sleep(1)       
+        time.sleep(0.5)       
 
     return valid, invalid
 

@@ -6,9 +6,8 @@ from .utils import scrape_watchlist, validate_usernames, BASE_URL
 
 def sync_user_watchlist(username):
     """
-    Ensures the user's watchlist is up to date in the database.
-    Re-scrapes only if last_synced is older than freshness_hours.
-    Returns the User instance.
+    Scrape + store a user's watchlist into the database.
+    Only rescrapes if last sync is stale.
     """
     user, created = User.objects.get_or_create(username=username)
     
@@ -39,6 +38,9 @@ def sync_user_watchlist(username):
     return user
 
 def compare_users(usernames):
+    """
+    Validate → Sync → Compute intersection of watchlists from DB only.
+    """
     valid_usernames, invalid_usernames = validate_usernames(usernames)
 
     if invalid_usernames:
