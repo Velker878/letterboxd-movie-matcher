@@ -17,7 +17,7 @@ def sync_user_watchlist(username):
         if age < timedelta(hours=1):
             return user
         
-    url = f'{BASE_URL}{username}/watchlist/'
+    url = f'{BASE_URL}/{username}/watchlist/'
     parsed_data = scrape_watchlist(url)
 
     with transaction.atomic():
@@ -29,7 +29,7 @@ def sync_user_watchlist(username):
                     'title': parsed_data['title'][i],
                     'link': parsed_data['link'][i],
                     'poster_image': parsed_data['poster_image'][i],
-                    'genres': parsed_data['genre'][i],
+                    'genres': parsed_data['genres'][i],
                 }
             )
             WatchlistEntry.objects.get_or_create(user=user, film=film)
