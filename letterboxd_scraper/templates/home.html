@@ -1,0 +1,28 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>SceneIt</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
+  </head>
+
+  <body>
+    <h1>SceneIt</h1>
+
+    <div class="input-box">
+      <p>Enter two or more Letterboxd usernames:</p>
+
+      <div id="username-fields">
+        <input type="text" placeholder="Username" class="username-input" />
+      </div>
+
+      <button id="compare-btn">Compare Watchlists</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script src="{% static 'js/app.js' %}"></script>
+  </body>
+</html>

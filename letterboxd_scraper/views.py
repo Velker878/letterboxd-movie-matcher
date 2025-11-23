@@ -1,5 +1,6 @@
 from django.http import JsonResponse
 from .services import compare_users
+from django.shortcuts import render
 
 def compare_view(request):
     usernames = request.GET.getlist('usernames')
@@ -26,3 +27,6 @@ def compare_view(request):
         'invalid_usernames': result.get('invalid_usernames', []),
         'common_films': films,
     })
+
+def home_view(request):
+    return render(request, 'home.html')
