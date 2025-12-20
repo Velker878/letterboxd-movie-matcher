@@ -13,7 +13,7 @@ def sync_user_watchlist(username):
     
     if not created and user.last_synced:
         age = now() - user.last_synced
-        if age < timedelta(hours=1):
+        if age < timedelta(hours=12):
             return user
         
     url = f'{BASE_URL}/{username}/watchlist/'

@@ -15,10 +15,23 @@
       <p>Enter two or more Letterboxd usernames:</p>
 
       <div id="username-fields">
-        <input type="text" placeholder="Username" class="username-input" />
+        <input
+          type="text"
+          placeholder="Username"
+          class="username-input"
+          name="username"
+        />
       </div>
 
-      <button id="compare-btn">Compare Watchlists</button>
+      <div id="button-row">
+        <button id="compare-btn">Compare Watchlists</button>
+        <button id="clear-btn" class="secondary">Clear</button>
+      </div>
+    </div>
+
+    <div id="loading" class="loading hidden">
+      <div class="spinner"></div>
+      <p>Comparing watchlists...</p>
     </div>
 
     <div id="results"></div>
