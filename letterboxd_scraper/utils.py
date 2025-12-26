@@ -1,0 +1,78 @@
+import time, requests
+from bs4 import BeautifulSoup
+
+BASE_URL = 'https://letterboxd.com'
+HEADERS = {"User-Agent": "Mozilla/5.0"}
+
+def validate_usernames(usernames):
+    """Check which usernames are valid"""
+    valid, invalid = [], []
+    for username in usernames:
+        url = f'{BASE_URL}/{username}/watchlist/'
+        try:
+            response = requests.get(url, headers=HEADERS, timeout=10)
+            if response.status_code == 200:
+                valid.append(username)
+            else:
+                invalid.append(username)
+        except requests.RequestException:
+            invalid.append(username)
+        time.sleep(0.5)       
+
+    return valid, invalid
+
+def scrape_watchlist(url):
+    """Scrape and parse a users watchlist into a dict."""
+    film_dict = {
+        'id': [],
+        'title': [],
+        'link': [],
+        'poster_image': [],
+        'genres': []
+    }
+    page = 1
+
+    while True:
+        page_url = url if page == 1 else f"{url}page/{page}/"
+        response = requests.get(page_url, headers=HEADERS, timeout=10)
+        
+        soup = BeautifulSoup(response.text, "lxml")
+        ul = soup.find('ul', class_='-p125')
+        if not ul:
+            break
+
+        films = ul.find_all('li')
+        if not films:
+            break
+
+        for li in films:
+            div = li.find('div')
+            if not div:
+                continue
+
+            film_id = div.get('data-film-id')
+            title = div.get('data-item-full-display-name')
+            link = div.get('data-item-link')
+            poster = div.get('data-poster-url')
+
+            # Fetch genres per film
+            try:
+                g_url = f"{BASE_URL}{link}genres/"
+                g_resp = requests.get(g_url, headers=HEADERS, timeout=10)
+                g_soup = BeautifulSoup(g_resp.text, "lxml")
+                g_div = g_soup.select_one('div.text-sluglist.capitalize')
+                genres = [a.text.strip() for a in g_div.find_all('a')] if g_div else []
+            except:
+                genres = []
+
+            # Add parsed data to dict
+            film_dict['id'].append(film_id)
+            film_dict['title'].append(title)
+            film_dict['link'].append(f'{BASE_URL}{link}')
+            film_dict['poster_image'].append(poster)
+            film_dict['genres'].append(genres)
+
+        page += 1
+        time.sleep(1)
+    
+    return film_dict
