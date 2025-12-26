@@ -5,9 +5,24 @@
   --lb-blue: #40bcf4;
 }
 
-@font-face {
-  font-family: "SharpGrotesk";
-  src: url("../fonts/SharpGrotesk-SemiBold20.ttf") format("truetype");
+.hidden {
+  display: none;
 }
-
-@import url("https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,100..900;1,100..900&display=swap");
+.error {
+  border-color: red;
+  animation: shake 0.3s;
+}
+@keyframes shake {
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}

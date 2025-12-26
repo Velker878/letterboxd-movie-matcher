@@ -4,37 +4,60 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>SceneIt</title>
+    <title>SceneIt?</title>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
   </head>
 
   <body>
+    <!-- Header -->
     <h1>SceneIt</h1>
+    <p>
+      For when you and your Letterboxd friends spend hours trying to find what
+      to watch together
+    </p>
 
+    <!-- Username Input -->
     <div class="input-box">
-      <p>Enter two or more Letterboxd usernames:</p>
-
-      <div id="username-fields">
-        <input
-          type="text"
-          placeholder="Username"
-          class="username-input"
-          name="username"
-        />
-      </div>
-
-      <div id="button-row">
-        <button id="compare-btn">Compare Watchlists</button>
-        <button id="clear-btn" class="secondary">Clear</button>
-      </div>
+      <p>Enter Letterboxd usernames:</p>
+      <input
+        id="username-input"
+        type="text"
+        placeholder="Username"
+        autocomplete="off"
+      />
+      <button id="add-username-btn">Add</button>
     </div>
 
-    <div id="loading" class="loading hidden">
-      <div class="spinner"></div>
-      <p>Comparing watchlists...</p>
+    <!-- Selected Users -->
+    <div id="selected-users" class="hidden">
+      <p>Selected users:</p>
+      <div id="user-tags"></div>
+      <button id="clear-users-btn" class="secondary">Clear</button>
     </div>
 
-    <div id="results"></div>
+    <!-- Compare -->
+    <button id="compare-btn" disabled>Compare Watchlists</button>
+
+    <!-- Loading -->
+    <div id="loading" class="hidden">
+      <progress></progress>
+      <p id="loading-step"></p>
+    </div>
+
+    <!-- Results -->
+    <div id="results" class="hidden">
+      <h2 id="results-title"></h2>
+
+      <div id="filters" class="hidden">
+        <label for="genre-filter">Filter by genre:</label>
+        <select id="genre-filter">
+          <option value="all">All</option>
+        </select>
+      </div>
+
+      <p id="results-count"></p>
+      <div id="movies-grid"></div>
+    </div>
 
     <script src="{% static 'js/app.js' %}"></script>
   </body>
