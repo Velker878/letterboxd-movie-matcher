@@ -26,12 +26,39 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ---------- Helpers ---------- */
   const normalize = (v) => v.trim().toLowerCase();
 
-  function addUser(name) {
+  async function validateAndAddUser(name) {
     const value = normalize(name);
-    if (!value || selectedUsers.has(value)) return;
+    if (!value) return;
 
-    selectedUsers.add(value);
-    renderUsers();
+    // Prevent duplicates immediately
+    if (selectedUsers.has(value)) {
+      alert("Username already added.");
+      return;
+    }
+
+    addBtn.disabled = true; // prevent double clicks
+
+    try {
+      const response = await fetch(
+        `/validate-user/?username=${encodeURIComponent(value)}`
+      );
+      const data = await response.json();
+
+      if (!data.valid) {
+        alert("That Letterboxd user does not exist.");
+        return;
+      }
+
+      selectedUsers.add(value);
+      renderUsers();
+      input.value = "";
+      input.focus();
+    } catch (err) {
+      alert("Unable to validate username. Try again.");
+      console.error(err);
+    } finally {
+      updateAddButtonState();
+    }
   }
 
   function renderUsers() {
@@ -74,10 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ---------- Input Events ---------- */
   addBtn.addEventListener("click", () => {
-    addUser(input.value);
-    input.value = "";
-    updateAddButtonState();
-    input.focus();
+    validateAndAddUser(input.value);
   });
 
   input.addEventListener("input", updateAddButtonState);
@@ -85,17 +109,20 @@ document.addEventListener("DOMContentLoaded", () => {
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      addUser(input.value);
-      input.value = "";
-      updateAddButtonState();
+      validateAndAddUser(input.value);
     }
   });
 
   input.addEventListener("paste", (e) => {
     e.preventDefault();
     const text = e.clipboardData.getData("text");
-    text.split(/[\s,]+/).forEach(addUser);
+    text
+      .split(/[\s,]+/)
+      .map(normalize)
+      .filter(Boolean)
+      .forEach((name) => validateAndAddUser(name));
     input.value = "";
+    updateAddButtonState();
   });
 
   clearUsersBtn.addEventListener("click", clearAll);
