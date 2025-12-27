@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const userTags = document.getElementById("user-tags");
   const clearUsersBtn = document.getElementById("clear-users-btn");
   const compareBtn = document.getElementById("compare-btn");
+  const feedback = document.getElementById("username-feedback");
 
   const loadingDiv = document.getElementById("loading");
   const loadingStep = document.getElementById("loading-step");
@@ -26,17 +27,28 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ---------- Helpers ---------- */
   const normalize = (v) => v.trim().toLowerCase();
 
+  function showFeedback(message) {
+    feedback.textContent = message;
+    feedback.classList.remove("hidden");
+  }
+
+  function clearFeedback() {
+    feedback.textContent = "";
+    feedback.classList.add("hidden");
+  }
+
   async function validateAndAddUser(name) {
     const value = normalize(name);
     if (!value) return;
 
     // Prevent duplicates immediately
     if (selectedUsers.has(value)) {
-      alert("Username already added.");
+      showFeedback("Username already added");
       return;
     }
 
-    addBtn.disabled = true; // prevent double clicks
+    // prevent double clicks
+    addBtn.disabled = true;
 
     try {
       const response = await fetch(
@@ -45,16 +57,17 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await response.json();
 
       if (!data.valid) {
-        alert("That Letterboxd user does not exist.");
+        showFeedback("That Letterboxd user does not exist.");
         return;
       }
 
+      clearFeedback();
       selectedUsers.add(value);
       renderUsers();
       input.value = "";
       input.focus();
     } catch (err) {
-      alert("Unable to validate username. Try again.");
+      showFeedback("Unable to validate username. Try again.");
       console.error(err);
     } finally {
       updateAddButtonState();
@@ -104,7 +117,10 @@ document.addEventListener("DOMContentLoaded", () => {
     validateAndAddUser(input.value);
   });
 
-  input.addEventListener("input", updateAddButtonState);
+  input.addEventListener("input", () => {
+    updateAddButtonState();
+    clearFeedback();
+  });
 
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
