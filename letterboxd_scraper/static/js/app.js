@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await response.json();
 
       if (!data.valid) {
-        return { status: "invalid", username: value };
+        return { status: "invalid", username: value, reason: data.reason };
       }
 
       selectedUsers.add(value);
@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (result.status === "duplicate") {
       showFeedback(`Username already added: ${result.username}`);
     } else if (result.status === "invalid") {
-      showFeedback(`Letterboxd user does not exist: ${result.username}`);
+      showFeedback(`${result.username}: ${result.reason}`);
     } else if (result.status === "error") {
       showFeedback("Unable to validate username. Try again.");
     } else {
@@ -148,50 +148,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const text = e.clipboardData.getData("text");
 
-    const names = text
-      .split(/[\s,]+/)
-      .map(normalize)
-      .filter(Boolean);
+    const names = [
+      ...new Set(
+        text
+          .split(/[\s,]+/)
+          .map(normalize)
+          .filter(Boolean)
+      ),
+    ];
 
     if (names.length > MAX_PASTE_USERS) {
-      showFeedback(
-        `You pasted ${names.length} usernames. Please paste up to ${MAX_PASTE_USERS}.`
-      );
+      showFeedback(`Too many usernames pasted. Max is ${MAX_PASTE_USERS}.`);
       return;
     }
 
-    if (!names.length) return;
-
-    const duplicates = [];
-    const invalid = [];
-    const errors = [];
+    const issues = [];
 
     for (const name of names) {
       const result = await validateAndAddUser(name);
-
-      if (result.status === "duplicate") duplicates.push(name);
-      else if (result.status === "invalid") invalid.push(name);
-      else if (result.status === "error") errors.push(name);
+      if (result.status === "duplicate") issues.push(`${name}: Already added`);
+      else if (result.status === "invalid")
+        issues.push(`${name}: ${result.reason}`);
+      else if (result.status === "error") issues.push(`${name}: Server error`);
     }
 
-    const messages = [];
-
-    if (duplicates.length) {
-      messages.push(`Already added: ${duplicates.join(", ")}`);
-    }
-    if (invalid.length) {
-      messages.push(`Invalid Letterboxd users: ${invalid.join(", ")}`);
-    }
-    if (errors.length) {
-      messages.push(`Could not validate: ${errors.join(", ")}`);
-    }
-
-    if (messages.length) {
-      showFeedback(messages.join(" | "));
+    if (issues.length) {
+      showFeedback(`ERRORS: ${issues.join(" | ")}`);
     }
 
     input.value = "";
-    input.focus();
     updateAddButtonState();
   });
 
@@ -226,10 +211,23 @@ document.addEventListener("DOMContentLoaded", () => {
       const response = await fetch(`/compare/?${params}`);
       const data = await response.json();
 
+      if (!response.ok) {
+        if (data.invalid_usernames) {
+          const errorMsg = Object.entries(data.invalid_usernames)
+            .map(([user, reason]) => `${user}: ${reason}`)
+            .join(" | ");
+          showFeedback(`Comparison failed: ${errorMsg}`);
+        } else {
+          showFeedback(data.error || "Comparison failed due to server error.");
+        }
+        return;
+      }
+
       commonFilms = data.common_films || [];
       renderResults();
+      input.value = "";
     } catch (err) {
-      alert("Something went wrong while comparing watchlists.");
+      showFeedback("Error during comparison. Try again.");
       console.error(err);
     } finally {
       clearInterval(stepInterval);

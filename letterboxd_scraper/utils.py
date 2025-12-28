@@ -23,7 +23,7 @@ def validate_usernames(usernames):
             elif status == 404:
                 results['invalid'][username] = 'User not found'
             elif status == 403:
-                results['invalid'][username] = 'Access forbidden'
+                results['invalid'][username] = 'Watchlist is not public'
             elif status in (301, 302):
                 results['invalid'][username] = 'Watchlist unavailable'
             else:
