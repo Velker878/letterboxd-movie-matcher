@@ -5,21 +5,38 @@ BASE_URL = 'https://letterboxd.com'
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 
 def validate_usernames(usernames):
-    """Check which usernames are valid"""
-    valid, invalid = [], []
+    """Validate Letterboxd usernames and return structured results."""
+    
+    results = {
+        'valid': [],
+        'invalid': {}
+    }
+
     for username in usernames:
         url = f'{BASE_URL}/{username}/watchlist/'
         try:
-            response = requests.get(url, headers=HEADERS, timeout=10)
-            if response.status_code == 200:
-                valid.append(username)
+            response = requests.get(url, headers=HEADERS, timeout=10, allow_redirects=False)
+            status = response.status_code
+
+            if status == 200:
+                results['valid'].append(username)
+            elif status == 404:
+                results['invalid'][username] = 'User not found'
+            elif status == 403:
+                results['invalid'][username] = 'Access forbidden'
+            elif status in (301, 302):
+                results['invalid'][username] = 'Watchlist unavailable'
             else:
-                invalid.append(username)
+                results['invalid'][username] = f'HTTP error {status}'
+
+        except requests.Timeout:
+            results['invalid'][username] = 'Request timed out'
         except requests.RequestException:
-            invalid.append(username)
+            results['invalid'][username] = 'Network error'
+        
         time.sleep(0.5)       
 
-    return valid, invalid
+    return results
 
 def scrape_watchlist(url):
     """Scrape and parse a users watchlist into a dict."""

@@ -41,7 +41,10 @@ def compare_users(usernames):
     """
     Validate → Sync → Compute intersection of watchlists from DB only.
     """
-    valid_usernames, invalid_usernames = validate_usernames(usernames)
+    validation = validate_usernames(usernames)
+
+    valid_usernames = validation['valid']
+    invalid_usernames = validation['invalid']
 
     if invalid_usernames:
         return {

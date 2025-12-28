@@ -37,16 +37,24 @@ def validate_user_view(request):
 
     if not username:
         return JsonResponse({
+            'username': username,
             'valid': False,
-            'username': username
+            'reason': 'empty'
         })
 
-    valid_usernames, invalid_usernames = validate_usernames([username])
+    validation = validate_usernames([username])
+    
+    if username in validation['valid']:
+        return JsonResponse({
+            'username': username,
+            'valid': True,
+            'reason': None
+        })
 
     return JsonResponse({
         'username': username,
-        'valid': username in valid_usernames,
-        'reason': None if username in valid_usernames else 'not_found'
+        'valid': False,
+        'reason': validation['invalid'].get(username)
     })
 
 def home_view(request):
