@@ -25,6 +25,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const genreFilter = document.getElementById("genre-filter");
 
   /* ---------- Helpers ---------- */
+  const MAX_PASTE_USERS = 10;
+
   const normalize = (v) => v.trim().toLowerCase();
 
   function showFeedback(message) {
@@ -37,17 +39,14 @@ document.addEventListener("DOMContentLoaded", () => {
     feedback.classList.add("hidden");
   }
 
-  async function validateAndAddUser(name) {
+  async function validateAndAddUser(name, options = {}) {
     const value = normalize(name);
-    if (!value) return;
+    if (!value) return { status: "empty" };
 
-    // Prevent duplicates immediately
     if (selectedUsers.has(value)) {
-      showFeedback("Username already added");
-      return;
+      return { status: "duplicate", username: value };
     }
 
-    // prevent double clicks
     addBtn.disabled = true;
 
     try {
@@ -57,20 +56,35 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await response.json();
 
       if (!data.valid) {
-        showFeedback("That Letterboxd user does not exist.");
-        return;
+        return { status: "invalid", username: value };
       }
 
-      clearFeedback();
       selectedUsers.add(value);
       renderUsers();
-      input.value = "";
-      input.focus();
+      return { status: "added", username: value };
     } catch (err) {
-      showFeedback("Unable to validate username. Try again.");
       console.error(err);
+      return { status: "error", username: value };
     } finally {
       updateAddButtonState();
+    }
+  }
+
+  async function handleSingleAdd() {
+    const result = await validateAndAddUser(input.value);
+
+    input.value = "";
+    input.focus();
+    updateAddButtonState();
+
+    if (result.status === "duplicate") {
+      showFeedback(`Username already added: ${result.username}`);
+    } else if (result.status === "invalid") {
+      showFeedback(`Letterboxd user does not exist: ${result.username}`);
+    } else if (result.status === "error") {
+      showFeedback("Unable to validate username. Try again.");
+    } else {
+      clearFeedback();
     }
   }
 
@@ -101,6 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function clearAll() {
     selectedUsers.clear();
     renderUsers();
+    clearFeedback();
   }
 
   function updateAddButtonState() {
@@ -113,9 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ---------- Input Events ---------- */
-  addBtn.addEventListener("click", () => {
-    validateAndAddUser(input.value);
-  });
+  addBtn.addEventListener("click", handleSingleAdd);
 
   input.addEventListener("input", () => {
     updateAddButtonState();
@@ -125,19 +138,60 @@ document.addEventListener("DOMContentLoaded", () => {
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      validateAndAddUser(input.value);
+      handleSingleAdd();
     }
   });
 
-  input.addEventListener("paste", (e) => {
+  input.addEventListener("paste", async (e) => {
     e.preventDefault();
+    clearFeedback();
+
     const text = e.clipboardData.getData("text");
-    text
+
+    const names = text
       .split(/[\s,]+/)
       .map(normalize)
-      .filter(Boolean)
-      .forEach((name) => validateAndAddUser(name));
+      .filter(Boolean);
+
+    if (names.length > MAX_PASTE_USERS) {
+      showFeedback(
+        `You pasted ${names.length} usernames. Please paste up to ${MAX_PASTE_USERS}.`
+      );
+      return;
+    }
+
+    if (!names.length) return;
+
+    const duplicates = [];
+    const invalid = [];
+    const errors = [];
+
+    for (const name of names) {
+      const result = await validateAndAddUser(name);
+
+      if (result.status === "duplicate") duplicates.push(name);
+      else if (result.status === "invalid") invalid.push(name);
+      else if (result.status === "error") errors.push(name);
+    }
+
+    const messages = [];
+
+    if (duplicates.length) {
+      messages.push(`Already added: ${duplicates.join(", ")}`);
+    }
+    if (invalid.length) {
+      messages.push(`Invalid Letterboxd users: ${invalid.join(", ")}`);
+    }
+    if (errors.length) {
+      messages.push(`Could not validate: ${errors.join(", ")}`);
+    }
+
+    if (messages.length) {
+      showFeedback(messages.join(" | "));
+    }
+
     input.value = "";
+    input.focus();
     updateAddButtonState();
   });
 
