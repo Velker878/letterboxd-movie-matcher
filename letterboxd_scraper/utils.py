@@ -8,7 +8,7 @@ def validate_usernames(usernames):
     """Validate Letterboxd usernames and return structured results."""
     
     results = {
-        'valid': [],
+        'valid': {},
         'invalid': {}
     }
 
@@ -19,7 +19,10 @@ def validate_usernames(usernames):
             status = response.status_code
 
             if status == 200:
-                results['valid'].append(username)
+                pfp_url = fetch_user_pfp(username)
+                results['valid'][username] = {
+                    "pfp": pfp_url
+                }
             elif status == 404:
                 results['invalid'][username] = 'User not found'
             elif status == 403:
@@ -93,3 +96,28 @@ def scrape_watchlist(url):
         time.sleep(1)
     
     return film_dict
+
+def fetch_user_pfp(username):
+    """Fetch the profile picture URL for a validated username (Assumes user exists and profile is accessible)"""
+    url = f'{BASE_URL}/{username}/'
+
+    try:
+        response = requests.get(url, headers=HEADERS, timeout=10)
+        
+        if response.status_code != 200:
+            return None
+        
+        soup = BeautifulSoup(response.text, 'lxml')
+        pfp_div = soup.find('div', class_='profile-avatar')
+        if not pfp_div:
+            return None
+        pfp_img = pfp_div.select_one('img')
+
+        if pfp_img and pfp_img.get('src'):
+            return pfp_img['src']
+        
+    except requests.RequestException:
+        pass
+
+    return None
+

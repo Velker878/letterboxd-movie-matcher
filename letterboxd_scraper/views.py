@@ -25,8 +25,8 @@ def compare_view(request):
     ]
 
     return JsonResponse({
-        'valid_usernames': result.get('valid_usernames', []),
-        'invalid_usernames': result.get('invalid_usernames', []),
+        'valid_users': result.get('valid_users', {}),
+        'invalid_usernames': result.get('invalid_usernames', {}),
         'common_films': films,
     })
 

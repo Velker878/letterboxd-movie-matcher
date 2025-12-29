@@ -43,13 +43,14 @@ def compare_users(usernames):
     """
     validation = validate_usernames(usernames)
 
-    valid_usernames = validation['valid']
+    valid_users = validation['valid']
+    valid_usernames = list(valid_users.keys())
     invalid_usernames = validation['invalid']
 
     if invalid_usernames:
         return {
             'error': 'invalid_usernames',
-            'valid_usernames': valid_usernames,
+            'valid_users': valid_users,
             'invalid_usernames': invalid_usernames,
             'common_films': []
         }
@@ -67,7 +68,7 @@ def compare_users(usernames):
     common_films = list(Film.objects.filter(film_id__in=common_ids))
 
     return {
-        'valid_usernames': valid_usernames,
-        'invalid_usernames': [],
+        'valid_users': valid_users,
+        'invalid_usernames': {},
         'common_films': common_films,
     }
