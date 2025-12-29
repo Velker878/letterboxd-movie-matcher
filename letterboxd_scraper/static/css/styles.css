@@ -19,6 +19,19 @@
   animation: shake 0.3s;
 }
 
+.user-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.user-pfp {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 @keyframes shake {
   0% {
     transform: translateX(0);

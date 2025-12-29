@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   /* ---------- State ---------- */
-  const selectedUsers = new Set();
+  const selectedUsers = new Map();
   let commonFilms = [];
 
   /* ---------- Elements ---------- */
@@ -59,7 +59,9 @@ document.addEventListener("DOMContentLoaded", () => {
         return { status: "invalid", username: value, reason: data.reason };
       }
 
-      selectedUsers.add(value);
+      selectedUsers.set(value, {
+        pfp: data.pfp || null,
+      });
       renderUsers();
       return { status: "added", username: value };
     } catch (err) {
@@ -91,18 +93,30 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderUsers() {
     userTags.innerHTML = "";
 
-    selectedUsers.forEach((user) => {
+    selectedUsers.forEach((data, username) => {
       const tag = document.createElement("span");
       tag.className = "user-tag";
-      tag.textContent = user;
 
+      // Avatar
+      const img = document.createElement("img");
+      img.className = "user-pfp";
+      img.src = data.pfp || "/static/images/default-pfp.png";
+      img.alt = username;
+
+      // Username
+      const name = document.createElement("span");
+      name.textContent = username;
+
+      // Remove button
       const remove = document.createElement("button");
       remove.textContent = "×";
       remove.onclick = () => {
-        selectedUsers.delete(user);
+        selectedUsers.delete(username);
         renderUsers();
       };
 
+      tag.appendChild(img);
+      tag.appendChild(name);
       tag.appendChild(remove);
       userTags.appendChild(tag);
     });
@@ -204,7 +218,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 600);
 
     try {
-      const params = [...selectedUsers]
+      const params = [...selectedUsers.keys()]
         .map((u) => `usernames=${encodeURIComponent(u)}`)
         .join("&");
 
@@ -240,7 +254,7 @@ document.addEventListener("DOMContentLoaded", () => {
     moviesGrid.innerHTML = "";
     genreFilter.innerHTML = `<option value="all">All</option>`;
 
-    const users = [...selectedUsers];
+    const users = [...selectedUsers.keys()];
     resultsTitle.textContent = `Movies in common between ${formatUserSentence(
       users
     )}`;

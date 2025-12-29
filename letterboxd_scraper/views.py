@@ -48,7 +48,8 @@ def validate_user_view(request):
         return JsonResponse({
             'username': username,
             'valid': True,
-            'reason': None
+            'reason': None,
+            'pfp': validation['valid'][username]['pfp']
         })
 
     return JsonResponse({
