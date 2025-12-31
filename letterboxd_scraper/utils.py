@@ -1,4 +1,4 @@
-import time, requests
+import time, requests, re
 from bs4 import BeautifulSoup
 
 BASE_URL = 'https://letterboxd.com'
@@ -41,62 +41,6 @@ def validate_usernames(usernames):
 
     return results
 
-def scrape_watchlist(url):
-    """Scrape and parse a users watchlist into a dict."""
-    film_dict = {
-        'id': [],
-        'title': [],
-        'link': [],
-        'poster_image': [],
-        'genres': []
-    }
-    page = 1
-
-    while True:
-        page_url = url if page == 1 else f"{url}page/{page}/"
-        response = requests.get(page_url, headers=HEADERS, timeout=10)
-        
-        soup = BeautifulSoup(response.text, "lxml")
-        ul = soup.find('ul', class_='-p125')
-        if not ul:
-            break
-
-        films = ul.find_all('li')
-        if not films:
-            break
-
-        for li in films:
-            div = li.find('div')
-            if not div:
-                continue
-
-            film_id = div.get('data-film-id')
-            title = div.get('data-item-full-display-name')
-            link = div.get('data-item-link')
-            poster = div.get('data-poster-url')
-
-            # Fetch genres per film
-            try:
-                g_url = f"{BASE_URL}{link}genres/"
-                g_resp = requests.get(g_url, headers=HEADERS, timeout=10)
-                g_soup = BeautifulSoup(g_resp.text, "lxml")
-                g_div = g_soup.select_one('div.text-sluglist.capitalize')
-                genres = [a.text.strip() for a in g_div.find_all('a')] if g_div else []
-            except:
-                genres = []
-
-            # Add parsed data to dict
-            film_dict['id'].append(film_id)
-            film_dict['title'].append(title)
-            film_dict['link'].append(f'{BASE_URL}{link}')
-            film_dict['poster_image'].append(poster)
-            film_dict['genres'].append(genres)
-
-        page += 1
-        time.sleep(1)
-    
-    return film_dict
-
 def fetch_user_pfp(username):
     """Fetch the profile picture URL for a validated username (Assumes user exists and profile is accessible)"""
     url = f'{BASE_URL}/{username}/'
@@ -121,3 +65,45 @@ def fetch_user_pfp(username):
 
     return None
 
+def scrape_watchlist(url):
+    """Scrape a user's Letterboxd watchlist and return film identifiers."""
+    films = []
+    page = 1
+
+    while True:
+        page_url = url if page == 1 else f"{url}page/{page}/"
+        response = requests.get(page_url, headers=HEADERS, timeout=10)
+        soup = BeautifulSoup(response.text, "lxml")
+
+        ul = soup.find('ul', class_='-p125')
+        if not ul:
+            break
+
+        for li in ul.find_all('li'):
+            div = li.find('div')
+            if not div:
+                continue
+
+            title = div.get('data-item-full-display-name')
+            slug = div.get('data-item-slug')
+
+            year = None
+
+            if title:
+                match = re.search(r'\((\d{4})\)\s*$', title)
+                if match:
+                    year = int(match.group(1))
+                    title = title[:match.start()].strip()
+
+            films.append({
+                "title": title,
+                "year": year,
+                "slug": slug,
+                "letterboxd_url": f"{BASE_URL}/film/{slug}/" if slug else None
+
+            })
+
+        page += 1
+        time.sleep(1)
+    
+    return films

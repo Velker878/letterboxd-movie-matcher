@@ -3,12 +3,9 @@ from django.db import transaction
 from django.utils.timezone import now
 from .models import User, Film, WatchlistEntry
 from .utils import scrape_watchlist, validate_usernames, BASE_URL
+from . import tmdb_service
 
 def sync_user_watchlist(username):
-    """
-    Scrape + store a user's watchlist into the database.
-    Only rescrapes if last sync is stale.
-    """
     user, created = User.objects.get_or_create(username=username)
     
     if not created and user.last_synced:
@@ -21,14 +18,14 @@ def sync_user_watchlist(username):
 
     with transaction.atomic():
         WatchlistEntry.objects.filter(user=user).delete()
-        for i in range(len(parsed_data['id'])):
+
+        for film_data in parsed_data:
             film, _ = Film.objects.update_or_create(
-                film_id = parsed_data['id'][i],
+                film_id=film_data['slug'],
                 defaults={
-                    'title': parsed_data['title'][i],
-                    'link': parsed_data['link'][i],
-                    'poster_image': parsed_data['poster_image'][i],
-                    'genres': parsed_data['genres'][i],
+                    'title': film_data['title'],
+                    'year': film_data['year'],
+                    'letterboxd_slug': film_data['slug'],
                 }
             )
             WatchlistEntry.objects.get_or_create(user=user, film=film)
@@ -38,24 +35,13 @@ def sync_user_watchlist(username):
     return user
 
 def compare_users(usernames):
-    """
-    Validate → Sync → Compute intersection of watchlists from DB only.
-    """
     validation = validate_usernames(usernames)
-
-    valid_users = validation['valid']
-    valid_usernames = list(valid_users.keys())
-    invalid_usernames = validation['invalid']
-
-    if invalid_usernames:
-        return {
-            'error': 'invalid_usernames',
-            'valid_users': valid_users,
-            'invalid_usernames': invalid_usernames,
-            'common_films': []
-        }
+    valid_usernames = list(validation['valid'].keys())
     
     users = [sync_user_watchlist(u) for u in valid_usernames]
+
+    if not users:
+        return {'error': 'No valid users', 'common_films': []}
     
     watchlists = []
     for user in users:
@@ -65,10 +51,31 @@ def compare_users(usernames):
         watchlists.append(film_ids)
 
     common_ids = set.intersection(*watchlists) if watchlists else set()
-    common_films = list(Film.objects.filter(film_id__in=common_ids))
+    common_films = Film.objects.filter(film_id__in=common_ids)
+
+    tmdb_cache = {}
+
+    enriched_films = []
+    for film in common_films:
+        if not film.tmdb_id or not film.poster_image:
+            key = (film.title, film.year)
+
+            if key in tmdb_cache:
+                tmdb_data = tmdb_cache[key]
+            else:
+                tmdb_data = tmdb_service.search_movie(film.title, film.year)
+                tmdb_cache[key] = tmdb_data
+            
+            if tmdb_data:
+                film.tmdb_id = tmdb_data.get('id')
+                film.poster_image = tmdb_service.get_poster_url(tmdb_data.get('poster_path'))
+                film.genres = tmdb_data.get('genre_ids', [])
+                film.save()
+        
+        enriched_films.append(film)
 
     return {
-        'valid_users': valid_users,
-        'invalid_usernames': {},
-        'common_films': common_films,
+        'valid_users': validation['valid'],
+        'invalid_usernames': validation['invalid'],
+        'common_films': enriched_films,
     }

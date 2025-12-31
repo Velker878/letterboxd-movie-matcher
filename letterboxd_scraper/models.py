@@ -8,11 +8,15 @@ class User(models.Model):
         return self.username
     
 class Film(models.Model):
-    film_id = models.CharField(max_length=50, unique=True)
+    letterboxd_id = models.CharField(max_length=50, unique=True)
     title = models.CharField(max_length=255)
-    link = models.CharField(max_length=255)
-    poster_image = models.CharField(max_length=500, null=True, blank =True)
+    year = models.IntegerField(null=True, blank=True)
+
+    tmdb_id = models.IntegerField(null=True, blank=True)
+    poster_image = models.CharField(max_length=500, null=True, blank=True)
     genres = models.JSONField(default=list)
+
+    letterboxd_slug = models.CharField(max_length=255, null=True, blank=True)
 
     def __str__(self):
         return self.title
