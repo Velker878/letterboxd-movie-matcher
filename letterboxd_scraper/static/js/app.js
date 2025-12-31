@@ -136,6 +136,37 @@ document.addEventListener("DOMContentLoaded", () => {
     addBtn.disabled = input.value.trim().length === 0;
   }
 
+  const progressFill = document.getElementById("progress-fill");
+
+  function setProgress(percent, text) {
+    progressFill.style.width = `${percent}%`;
+    loadingStep.textContent = text;
+  }
+
+  function smoothProgressTo(target, duration = 600) {
+    return new Promise((resolve) => {
+      const start = parseFloat(progressFill.style.width) || 0;
+      const delta = target - start;
+      const startTime = performance.now();
+
+      function animate(now) {
+        const elapsed = now - startTime;
+        const linearProgress = Math.min(elapsed / duration, 1);
+        const progress = 1 - Math.pow(1 - linearProgress, 3);
+        const value = start + delta * progress;
+
+        progressFill.style.width = `${value}%`;
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          resolve();
+        }
+      }
+      requestAnimationFrame(animate);
+    });
+  }
+
   function formatUserSentence(users) {
     if (users.length === 2) return `${users[0]} and ${users[1]}`;
     return `${users.slice(0, -1).join(", ")}, and ${users.at(-1)}`;
@@ -200,51 +231,46 @@ document.addEventListener("DOMContentLoaded", () => {
   compareBtn.addEventListener("click", async () => {
     if (selectedUsers.size < 2) return;
 
-    // UI state
     resultsDiv.classList.add("hidden");
     loadingDiv.classList.remove("hidden");
-
-    const steps = [
-      "Validating usernames…",
-      "Syncing watchlists…",
-      "Comparing movies…",
-    ];
-
-    let stepIndex = 0;
-    loadingStep.textContent = steps[stepIndex];
-    const stepInterval = setInterval(() => {
-      stepIndex = Math.min(stepIndex + 1, steps.length - 1);
-      loadingStep.textContent = steps[stepIndex];
-    }, 600);
+    setProgress(0, "Preparing...");
 
     try {
       const params = [...selectedUsers.keys()]
         .map((u) => `usernames=${encodeURIComponent(u)}`)
         .join("&");
 
-      const response = await fetch(`/compare/?${params}`);
+      const fetchPromise = fetch(`/compare/?${params}`);
+
+      loadingStep.textContent = "Validating usernames...";
+      await smoothProgressTo(10, 400);
+
+      loadingStep.textContent = "Syncing watchlists...";
+      await smoothProgressTo(40, 3500);
+
+      loadingStep.textContent = "Comparing watchlists...";
+      await smoothProgressTo(80, 3000);
+
+      const response = await fetchPromise;
       const data = await response.json();
 
       if (!response.ok) {
-        if (data.invalid_usernames) {
-          const errorMsg = Object.entries(data.invalid_usernames)
-            .map(([user, reason]) => `${user}: ${reason}`)
-            .join(" | ");
-          showFeedback(`Comparison failed: ${errorMsg}`);
-        } else {
-          showFeedback(data.error || "Comparison failed due to server error.");
-        }
+        loadingDiv.classList.add("hidden");
         return;
       }
 
+      loadingStep.textContent = "Processing results...";
+      await smoothProgressTo(100, 200);
+
       commonFilms = data.common_films || [];
       renderResults();
-      input.value = "";
+
+      setTimeout(() => {
+        loadingDiv.classList.add("hidden");
+      }, 400);
     } catch (err) {
-      showFeedback("Error during comparison. Try again.");
       console.error(err);
-    } finally {
-      clearInterval(stepInterval);
+      showFeedback("Error during comparison.");
       loadingDiv.classList.add("hidden");
     }
   });

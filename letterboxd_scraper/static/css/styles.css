@@ -14,11 +14,6 @@
   font-size: 0.9rem;
 }
 
-.error {
-  border-color: red;
-  animation: shake 0.3s;
-}
-
 .user-tag {
   display: inline-flex;
   align-items: center;
@@ -30,6 +25,36 @@
   height: 24px;
   border-radius: 50%;
   object-fit: cover;
+}
+
+/* Loading container */
+#loading {
+  margin-top: 24px;
+  text-align: center;
+}
+
+/* Progress bar shell */
+.progress-bar {
+  width: 100%;
+  max-width: 420px;
+  height: 10px;
+  background-color: #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 12px auto 0;
+}
+
+/* Actual progress */
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background-color: #565656;
+  transition: width 0.4s ease;
+}
+
+.error {
+  border-color: red;
+  animation: shake 0.3s;
 }
 
 @keyframes shake {
