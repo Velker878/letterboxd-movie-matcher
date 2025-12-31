@@ -17,9 +17,9 @@ def compare_view(request):
     films = [
         {
             'title': film.title,
-            'link': film.link,
             'poster_image': film.poster_image,
             'genres': film.genres,
+            'letterboxd_url': f"https://letterboxd.com/film/{film.letterboxd_slug}/"
         }
         for film in result.get('common_films', [])
     ]
