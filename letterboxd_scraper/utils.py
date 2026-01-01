@@ -67,35 +67,23 @@ def fetch_user_pfp(username):
 
 def scrape_watchlist(url):
     """Scrape a user's Letterboxd watchlist and return film identifiers."""
-    print(f"--- DEBUG: Starting scrape for {url} ---") # Print Debugging
     films = []
     page = 1
 
     while True:
-        print(f"--- DEBUG: Scraping Page {page} ---") # Print Debugging 
         page_url = url if page == 1 else f"{url}page/{page}/"
         response = requests.get(page_url, headers=HEADERS, timeout=10)
         
-        try: #DEBUG
-            response = requests.get(page_url, headers=HEADERS, timeout=10)
-            print(f"--- DEBUG: Page {page} status code: {response.status_code} ---") # DEBUG
-        except Exception as e:
-            print(f"--- DEBUG: Network error on page {page}: {e} ---") # DEBUG
+        if response.status_code != 200:
             break
 
         soup = BeautifulSoup(response.text, "lxml")
-
         ul = soup.find('ul', class_='-p125')
         if not ul:
-            print(f"--- DEBUG: No UL found on page {page}. Stopping. ---") # DEBUG
             break
 
-        items_found = len(ul.find_all('li'))
-        print(f"--- DEBUG: Found {items_found} items on page {page} ---") # DEBUG
-        
         items = ul.find_all('li')
         if not items:
-            print(f"--- DEBUG: Page {page} has a list but no movies. Stopping. ---")
             break
 
         for li in items:
@@ -103,27 +91,26 @@ def scrape_watchlist(url):
             if not div:
                 continue
 
-            title = div.get('data-item-full-display-name')
             slug = div.get('data-item-slug')
+            if not slug:
+                continue
 
-            year = None
+            raw_title = div.get('data-item-full-display-name')
+            title, year = raw_title, None            
 
-            if title:
-                match = re.search(r'\((\d{4})\)\s*$', title)
+            if raw_title:
+                match = re.search(r'\((\d{4})\)\s*$', raw_title)
                 if match:
                     year = int(match.group(1))
-                    title = title[:match.start()].strip()
+                    title = raw_title[:match.start()].strip()
 
             films.append({
+                "slug": slug,
                 "title": title,
                 "year": year,
-                "slug": slug,
-                "letterboxd_url": f"{BASE_URL}/film/{slug}/" if slug else None
-
             })
 
         page += 1
-        time.sleep(1)
+        time.sleep(0.75)
     
-    print(f"--- DEBUG: Scrape finished. Total films: {len(films)} ---") # DEBUG
     return films

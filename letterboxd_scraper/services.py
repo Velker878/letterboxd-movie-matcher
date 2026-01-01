@@ -6,7 +6,6 @@ from .utils import scrape_watchlist, validate_usernames, BASE_URL
 from . import tmdb_service
 
 def sync_user_watchlist(username):
-    print(f"--- DEBUG: Syncing user: {username} ---") # DEBUG
     user, created = User.objects.get_or_create(username=username)
     
     if not created and user.last_synced:
@@ -17,33 +16,24 @@ def sync_user_watchlist(username):
     url = f'{BASE_URL}/{username}/watchlist/'
     parsed_data = scrape_watchlist(url)
 
-    print(f"--- DEBUG: Saving {len(parsed_data)} films to DB for {username} ---") # DEBUG
-
     try:
         with transaction.atomic():
             WatchlistEntry.objects.filter(user=user).delete()
 
             for film_data in parsed_data:
-                # DEBUG: print the first film being saved to check for errors
-                if parsed_data.index(film_data) == 0:
-                     print(f"--- DEBUG: Saving first film: {film_data} ---")
-
                 film, _ = Film.objects.update_or_create(
-                    letterboxd_id=film_data['slug'], # Ensure this is letterboxd_id NOT film_id
+                    letterboxd_slug=film_data['slug'],
                     defaults={
                         'title': film_data['title'],
                         'year': film_data['year'],
-                        'letterboxd_slug': film_data['slug'],
                     }
                 )
                 WatchlistEntry.objects.get_or_create(user=user, film=film)
 
             user.last_synced = now()
             user.save()
-            print(f"--- DEBUG: Database save complete for {username} ---") # DEBUG
     except Exception as e:
-        print(f"--- DEBUG: CRITICAL DATABASE ERROR: {e} ---") # DEBUG
-        raise e # Re-raise to let Django handle it
+        raise e
 
     return user
 
@@ -67,24 +57,27 @@ def compare_users(usernames):
     common_films = Film.objects.filter(letterboxd_slug__in=common_ids)
 
     tmdb_cache = {}
-
     enriched_films = []
-    for film in common_films:
-        if not film.tmdb_id or not film.poster_image:
-            key = (film.title, film.year)
 
-            if key in tmdb_cache:
-                tmdb_data = tmdb_cache[key]
-            else:
-                tmdb_data = tmdb_service.search_movie(film.title, film.year)
-                tmdb_cache[key] = tmdb_data
-            
+    for film in common_films:
+        needs_enrichment = not film.tmdb_id or not film.poster_image
+
+        if needs_enrichment:
+            tmdb_data = tmdb_service.search_multi(film.title, film.year)
+
             if tmdb_data:
-                film.tmdb_id = tmdb_data.get('id')
-                film.poster_image = tmdb_service.get_poster_url(tmdb_data.get('poster_path'))
-                film.genres = tmdb_data.get('genre_ids', [])
-                film.save()
-        
+                media_type = tmdb_data.get("media_type")
+
+                film.tmdb_id = tmdb_data.get("id")
+                film.poster_image = tmdb_service.get_poster_url(
+                    tmdb_data.get("poster_path")
+                )
+                film.genres = tmdb_service.resolve_genres(
+                    tmdb_data.get("genre_ids", []),
+                    media_type
+                )
+                film.save(update_fields=["tmdb_id", "poster_image", "genres"])
+
         enriched_films.append(film)
 
     return {

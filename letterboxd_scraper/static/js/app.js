@@ -338,7 +338,7 @@ document.addEventListener("DOMContentLoaded", () => {
       posterWrapper.className = "movie-poster";
 
       const img = document.createElement("img");
-      img.src = film.poster_image;
+      img.src = film.poster_url;
       img.alt = film.title;
       img.loading = "lazy";
 

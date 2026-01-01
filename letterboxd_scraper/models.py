@@ -8,7 +8,8 @@ class User(models.Model):
         return self.username
     
 class Film(models.Model):
-    letterboxd_id = models.CharField(max_length=50, unique=True)
+    letterboxd_slug = models.CharField(max_length=50, unique=True)
+    
     title = models.CharField(max_length=255)
     year = models.IntegerField(null=True, blank=True)
 
@@ -16,10 +17,8 @@ class Film(models.Model):
     poster_image = models.CharField(max_length=500, null=True, blank=True)
     genres = models.JSONField(default=list)
 
-    letterboxd_slug = models.CharField(max_length=255, null=True, blank=True)
-
     def __str__(self):
-        return self.title
+        return f"{self.title} ({self.year})" if self.year else self.title
     
 class WatchlistEntry(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
