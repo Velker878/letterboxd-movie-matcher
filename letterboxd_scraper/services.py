@@ -6,6 +6,7 @@ from .utils import scrape_watchlist, validate_usernames, BASE_URL
 from . import tmdb_service
 
 def sync_user_watchlist(username):
+    print(f"--- DEBUG: Syncing user: {username} ---") # DEBUG
     user, created = User.objects.get_or_create(username=username)
     
     if not created and user.last_synced:
@@ -16,22 +17,34 @@ def sync_user_watchlist(username):
     url = f'{BASE_URL}/{username}/watchlist/'
     parsed_data = scrape_watchlist(url)
 
-    with transaction.atomic():
-        WatchlistEntry.objects.filter(user=user).delete()
+    print(f"--- DEBUG: Saving {len(parsed_data)} films to DB for {username} ---") # DEBUG
 
-        for film_data in parsed_data:
-            film, _ = Film.objects.update_or_create(
-                film_id=film_data['slug'],
-                defaults={
-                    'title': film_data['title'],
-                    'year': film_data['year'],
-                    'letterboxd_slug': film_data['slug'],
-                }
-            )
-            WatchlistEntry.objects.get_or_create(user=user, film=film)
+    try:
+        with transaction.atomic():
+            WatchlistEntry.objects.filter(user=user).delete()
 
-        user.last_synced = now()
-        user.save()
+            for film_data in parsed_data:
+                # DEBUG: print the first film being saved to check for errors
+                if parsed_data.index(film_data) == 0:
+                     print(f"--- DEBUG: Saving first film: {film_data} ---")
+
+                film, _ = Film.objects.update_or_create(
+                    letterboxd_id=film_data['slug'], # Ensure this is letterboxd_id NOT film_id
+                    defaults={
+                        'title': film_data['title'],
+                        'year': film_data['year'],
+                        'letterboxd_slug': film_data['slug'],
+                    }
+                )
+                WatchlistEntry.objects.get_or_create(user=user, film=film)
+
+            user.last_synced = now()
+            user.save()
+            print(f"--- DEBUG: Database save complete for {username} ---") # DEBUG
+    except Exception as e:
+        print(f"--- DEBUG: CRITICAL DATABASE ERROR: {e} ---") # DEBUG
+        raise e # Re-raise to let Django handle it
+
     return user
 
 def compare_users(usernames):
@@ -46,12 +59,12 @@ def compare_users(usernames):
     watchlists = []
     for user in users:
         film_ids = set(
-            WatchlistEntry.objects.filter(user=user).values_list('film__film_id', flat=True)
+            WatchlistEntry.objects.filter(user=user).values_list('film__letterboxd_slug', flat=True)
         )
         watchlists.append(film_ids)
 
     common_ids = set.intersection(*watchlists) if watchlists else set()
-    common_films = Film.objects.filter(film_id__in=common_ids)
+    common_films = Film.objects.filter(letterboxd_slug__in=common_ids)
 
     tmdb_cache = {}
 
@@ -77,5 +90,5 @@ def compare_users(usernames):
     return {
         'valid_users': validation['valid'],
         'invalid_usernames': validation['invalid'],
-        'common_films': enriched_films,
+        'common_films': list(common_films),
     }

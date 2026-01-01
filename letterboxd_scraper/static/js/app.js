@@ -229,6 +229,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ---------- Compare ---------- */
   compareBtn.addEventListener("click", async () => {
+    console.log("DEBUG: Compare button clicked");
+
     if (selectedUsers.size < 2) return;
 
     resultsDiv.classList.add("hidden");
@@ -240,6 +242,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .map((u) => `usernames=${encodeURIComponent(u)}`)
         .join("&");
 
+      console.log("DEBUG: Sending fetch request...");
       const fetchPromise = fetch(`/compare/?${params}`);
 
       loadingStep.textContent = "Validating usernames...";
@@ -251,13 +254,21 @@ document.addEventListener("DOMContentLoaded", () => {
       loadingStep.textContent = "Comparing watchlists...";
       await smoothProgressTo(80, 3000);
 
+      console.log("DEBUG: Waiting for server response..."); // DEBUG
       const response = await fetchPromise;
-      const data = await response.json();
+      console.log("DEBUG: Response received", response.status); // DEBUG
 
       if (!response.ok) {
+        console.error("DEBUG: Server returned error", response.status); // DEBUG
+        const errorText = await response.text(); // Get text in case JSON fails
+        console.error("DEBUG: Error details:", errorText);
         loadingDiv.classList.add("hidden");
+        showFeedback("Server Error. Check Console.");
         return;
       }
+
+      const data = await response.json();
+      console.log("DEBUG: JSON Data parsed", data); // DEBUG
 
       loadingStep.textContent = "Processing results...";
       await smoothProgressTo(100, 200);
@@ -311,38 +322,36 @@ document.addEventListener("DOMContentLoaded", () => {
     resultsDiv.classList.remove("hidden");
   }
 
-  function renderMovies(films) {
+  function renderMovies(movies) {
     moviesGrid.innerHTML = "";
 
-    films.forEach((film) => {
+    if (movies.length === 0) {
+      moviesGrid.innerHTML = "<p>No common films found.</p>";
+      return;
+    }
+
+    movies.forEach((film) => {
       const card = document.createElement("div");
       card.className = "movie-card";
+
+      const posterWrapper = document.createElement("div");
+      posterWrapper.className = "movie-poster";
 
       const img = document.createElement("img");
       img.src = film.poster_image;
       img.alt = film.title;
+      img.loading = "lazy";
 
-      const title = document.createElement("p");
-      title.textContent = film.title;
+      posterWrapper.appendChild(img);
 
-      const genresDiv = document.createElement("div");
-      genresDiv.className = "genres";
+      const title = document.createElement("div");
+      title.className = "movie-title";
+      title.textContent = film.year
+        ? `${film.title} (${film.year})`
+        : film.title;
 
-      film.genres.forEach((g) => {
-        const badge = document.createElement("span");
-        badge.textContent = g;
-        genresDiv.appendChild(badge);
-      });
-
-      const link = document.createElement("a");
-      link.href = film.link;
-      link.target = "_blank";
-      link.textContent = "View on Letterboxd";
-
-      card.appendChild(img);
+      card.appendChild(posterWrapper);
       card.appendChild(title);
-      card.appendChild(genresDiv);
-      card.appendChild(link);
 
       moviesGrid.appendChild(card);
     });
