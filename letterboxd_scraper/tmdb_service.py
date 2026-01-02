@@ -8,55 +8,90 @@ _GENRE_CACHE = {
     "tv": None,
 }
 
+MAX_PAGES = 3
+
+# ---------- HELPERS ----------
+
+def normalize_title(title):
+    return title.strip().lower()
+
+def year_matches(date_str, target_year, tolerance=1):
+    if not date_str or target_year is None:
+        return False
+    
+    try:
+        item_year = int(date_str.split("-")[0])
+        return abs(item_year - int(target_year)) <= tolerance
+    except ValueError:
+        return False
+
 # ---------- SEARCH ----------
 
-def search_multi(title, year=None):
+def _search_single_media(media_type, title, year=None):
     """
-    Search TMDB for both movies and TV shows.
-    Returns the best matching result or None.
+    media_type: 'movie' or 'tv'
+    Returns best exact-title match or None
     """
     params = {
         "api_key": settings.TMDB_API_KEY,
         "query": title,
     }
 
-    resp = requests.get(f"{TMDB_BASE}/search/multi", params=params, timeout=10)
-    data = resp.json()
-    results = data.get("results", [])
+    title_norm = normalize_title(title)
 
-    if not results:
-        return None
-    
-    candidates = [
-        r for r in results
-        if r.get("media_type") in ("movie", "tv")
-    ]
+    for page in range(1, MAX_PAGES + 1):
+        params["page"] = page
+        resp = requests.get(
+            f"{TMDB_BASE}/search/{media_type}",
+            params=params,
+            timeout=10
+        )
+        results = resp.json().get("results", [])
 
-    if not candidates:
-        return None
-    
-    if year:
-        target_year = int(year)
+        if not results:
+            break
 
-        for item in candidates:
-            date_str = (
-                item.get("release_date") or item.get("first_air_date")
+        for item in results:
+            item_title = (
+                item.get("title") if media_type == "movie"
+                else item.get("name")
             )
-            if not date_str:
+
+            if not item_title:
                 continue
 
-            try:
-                item_year = int(date_str.split("-")[0])
-            except ValueError:
+            if normalize_title(item_title) != title_norm:
                 continue
 
-            if abs(item_year - target_year) <= 1:
+            date_field = (
+                item.get("release_date") if media_type == "movie"
+                else item.get("first_air_date")
+            )
+
+            if year_matches(date_field, year):
+                item["media_type"] = media_type
                 return item
-        
-    
-    #Fallback to first candidate if no match
-    return candidates[0]
- 
+
+    return None
+
+
+def search_tmdb(title, year=None):
+    """
+    Movie-first TMDB search with TV fallback.
+    Returns matched item dict with media_type or None.
+    """
+
+    # 1. Try movies first
+    movie = _search_single_media("movie", title, year)
+    if movie:
+        return movie
+
+    # 2. Fallback to TV
+    tv = _search_single_media("tv", title, year)
+    if tv:
+        return tv
+
+    return None
 
 # ---------- POSTER ----------
 

@@ -10,7 +10,7 @@ def sync_user_watchlist(username):
     
     if not created and user.last_synced:
         age = now() - user.last_synced
-        if age < timedelta(hours=12):
+        if age < timedelta(hours=0.0000001):
             return user
         
     url = f'{BASE_URL}/{username}/watchlist/'
@@ -63,7 +63,7 @@ def compare_users(usernames):
         needs_enrichment = not film.tmdb_id or not film.poster_image
 
         if needs_enrichment:
-            tmdb_data = tmdb_service.search_multi(film.title, film.year)
+            tmdb_data = tmdb_service.search_tmdb(film.title, film.year)
 
             if tmdb_data:
                 media_type = tmdb_data.get("media_type")
