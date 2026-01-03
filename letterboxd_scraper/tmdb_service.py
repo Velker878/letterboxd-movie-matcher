@@ -27,20 +27,26 @@ def year_matches(date_str, target_year, tolerance=1):
 
 # ---------- SEARCH ----------
 
-def _search_single_media(media_type, title, year=None):
+def _search_single_media(media_type, title, year):
     """
     media_type: 'movie' or 'tv'
     Returns best exact-title match or None
     """
+
+    print(f"searching tmdb for: {title} ({year}), in {media_type}")
+
     params = {
         "api_key": settings.TMDB_API_KEY,
         "query": title,
+        "year": year,
     }
 
     title_norm = normalize_title(title)
+    candidates = []
 
     for page in range(1, MAX_PAGES + 1):
         params["page"] = page
+
         resp = requests.get(
             f"{TMDB_BASE}/search/{media_type}",
             params=params,
@@ -56,7 +62,6 @@ def _search_single_media(media_type, title, year=None):
                 item.get("title") if media_type == "movie"
                 else item.get("name")
             )
-
             if not item_title:
                 continue
 
@@ -67,12 +72,33 @@ def _search_single_media(media_type, title, year=None):
                 item.get("release_date") if media_type == "movie"
                 else item.get("first_air_date")
             )
+            if not year_matches(date_field, year):
+                continue
 
-            if year_matches(date_field, year):
-                item["media_type"] = media_type
-                return item
+            if not item.get("poster_path"):
+                continue
 
-    return None
+            candidates.append({
+                **item,
+                "media_type": media_type
+            })
+    
+    if not candidates:
+        return None
+    
+    if len(candidates) >= 2:
+        if candidates[0]["vote_count"] > candidates[1]["vote_count"] * 5:
+            return candidates[0]
+
+    candidates.sort(
+        key=lambda x: (
+            x.get("vote_count", 0),
+            x.get("vote_average", 0),
+        ),
+        reverse=True
+    )
+
+    return candidates[0]
 
 
 def search_tmdb(title, year=None):
@@ -81,16 +107,16 @@ def search_tmdb(title, year=None):
     Returns matched item dict with media_type or None.
     """
 
-    # 1. Try movies first
     movie = _search_single_media("movie", title, year)
     if movie:
+        print(movie)
         return movie
 
-    # 2. Fallback to TV
     tv = _search_single_media("tv", title, year)
     if tv:
+        print(tv)
         return tv
-
+    
     return None
 
 # ---------- POSTER ----------
