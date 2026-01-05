@@ -111,6 +111,6 @@ def scrape_watchlist(url):
             })
 
         page += 1
-        time.sleep(0.75)
+        time.sleep(1)
     
     return films

@@ -249,17 +249,14 @@ document.addEventListener("DOMContentLoaded", () => {
       await smoothProgressTo(10, 400);
 
       loadingStep.textContent = "Syncing watchlists...";
-      await smoothProgressTo(40, 3500);
+      await smoothProgressTo(25, 2000);
 
       loadingStep.textContent = "Comparing watchlists...";
-      await smoothProgressTo(80, 3000);
+      await smoothProgressTo(50, 3500);
 
-      console.log("DEBUG: Waiting for server response..."); // DEBUG
       const response = await fetchPromise;
-      console.log("DEBUG: Response received", response.status); // DEBUG
 
       if (!response.ok) {
-        console.error("DEBUG: Server returned error", response.status); // DEBUG
         const errorText = await response.text(); // Get text in case JSON fails
         console.error("DEBUG: Error details:", errorText);
         loadingDiv.classList.add("hidden");
@@ -268,7 +265,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const data = await response.json();
-      console.log("DEBUG: JSON Data parsed", data); // DEBUG
 
       loadingStep.textContent = "Processing results...";
       await smoothProgressTo(100, 200);
@@ -306,8 +302,10 @@ document.addEventListener("DOMContentLoaded", () => {
     resultsCount.textContent = `${commonFilms.length} movies in common`;
 
     // Build genre filter
-    const genres = new Set();
-    commonFilms.forEach((film) => film.genres.forEach((g) => genres.add(g)));
+    const genresSet = new Set();
+    commonFilms.forEach((film) => film.genres.forEach((g) => genresSet.add(g)));
+
+    const genres = [...genresSet].sort((a, b) => a.localeCompare(b));
 
     genres.forEach((g) => {
       const option = document.createElement("option");

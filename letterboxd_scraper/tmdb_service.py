@@ -33,8 +33,6 @@ def _search_single_media(media_type, title, year):
     Returns best exact-title match or None
     """
 
-    print(f"searching tmdb for: {title} ({year}), in {media_type}")
-
     params = {
         "api_key": settings.TMDB_API_KEY,
         "query": title,
@@ -109,12 +107,10 @@ def search_tmdb(title, year=None):
 
     movie = _search_single_media("movie", title, year)
     if movie:
-        print(movie)
         return movie
 
     tv = _search_single_media("tv", title, year)
     if tv:
-        print(tv)
         return tv
     
     return None
