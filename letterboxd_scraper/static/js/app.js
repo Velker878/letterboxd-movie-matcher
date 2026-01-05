@@ -329,8 +329,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     movies.forEach((film) => {
-      const card = document.createElement("div");
-      card.className = "movie-card";
+      const link = document.createElement("a");
+      link.className = "movie-card";
+      link.href = film.letterboxd_url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
 
       const posterWrapper = document.createElement("div");
       posterWrapper.className = "movie-poster";
@@ -340,18 +343,16 @@ document.addEventListener("DOMContentLoaded", () => {
       img.alt = film.title;
       img.loading = "lazy";
 
-      posterWrapper.appendChild(img);
-
-      const title = document.createElement("div");
-      title.className = "movie-title";
-      title.textContent = film.year
+      const overlay = document.createElement("div");
+      overlay.className = "movie-overlay";
+      overlay.textContent = film.year
         ? `${film.title} (${film.year})`
         : film.title;
 
-      card.appendChild(posterWrapper);
-      card.appendChild(title);
-
-      moviesGrid.appendChild(card);
+      posterWrapper.appendChild(img);
+      posterWrapper.appendChild(overlay);
+      link.appendChild(posterWrapper);
+      moviesGrid.appendChild(link);
     });
   }
 
