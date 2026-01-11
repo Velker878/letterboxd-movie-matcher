@@ -1,0 +1,19 @@
+[33mb7fdfbb[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfrontend-mvp[m[33m)[m Merge pull request #2 from Velker878/main
+[33mf7766c9[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Merge pull request #1 from Velker878/backend-setup
+[33m7f75ae4[m Create base MVP (No styling).
+[33m79053d5[m[33m ([m[1;32mbackend-setup[m[33m)[m Reset mvp frontend template
+[33m3f15bd5[m[33m ([m[1;31morigin/backend-setup[m[33m)[m Create MVP frontend template
+[33mf3a1d72[m Small structure, clarity changes
+[33m91fb3c9[m Fixed issues with Django backend and debugged with ChatGPT test files. Small tweaks to scraping results.
+[33mf7f5ae2[m Add backend for Letterboxd watchlist comparison: username validation, scraping, database models, sync with freshness tracking, and common films comparison. Has not been tested.
+[33md15fdd5[m Create Django project and transition python scraper into a Django structure.
+[33md42c65f[m Installed lxml to project. Updated Python Scraper: reworked fetch_usernames and fetch_watchlist to validate inputs before running rest of program, reworked watchlist_parser for pagination, compare_watchlists function, main for general program
+[33md62bf68[m Add Requests to Web Scraping tech stack
+[33m2de7eec[m Setup Python scraper: fetch usernames, validate URLs, parse watchlists with lxml, store movie data for multiple users
+[33mcb910df[m Add Python virtual environment and dependencies
+[33md7cb8c9[m[33m ([m[1;32mmain[m[33m)[m Add license statement to README
+[33m86d8bc1[m Add MIT license to repository
+[33m07c8980[m Add .gitignore for project
+[33mb46f495[m Add project README
+[33md6214b1[m Folder creation
+[33m540f9e7[m Initial commit

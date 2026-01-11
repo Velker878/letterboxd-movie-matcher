@@ -6,22 +6,67 @@
     <meta charset="UTF-8" />
     <title>SceneIt</title>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
+      rel="stylesheet"
+    />
   </head>
 
   <body>
+    <!-- Header -->
     <h1>SceneIt</h1>
+    <p>
+      For when you and your Letterboxd friends spend hours trying to find what
+      to watch together
+    </p>
 
+    <!-- Username Input -->
     <div class="input-box">
-      <p>Enter two or more Letterboxd usernames:</p>
-
-      <div id="username-fields">
-        <input type="text" placeholder="Username" class="username-input" />
-      </div>
-
-      <button id="compare-btn">Compare Watchlists</button>
+      <h3>Enter Letterboxd usernames:</h3>
+      <input
+        id="username-input"
+        type="text"
+        placeholder="Username"
+        autocomplete="off"
+      />
+      <button id="add-username-btn">Add</button>
+      <p id="username-feedback" class="feedback hidden"></p>
     </div>
 
-    <div id="results"></div>
+    <!-- Selected Users -->
+    <div id="selected-users" class="hidden">
+      <p>Selected users:</p>
+      <div id="user-tags"></div>
+      <button id="clear-users-btn" class="secondary">Clear</button>
+    </div>
+
+    <!-- Compare -->
+    <button id="compare-btn" disabled>Compare Watchlists</button>
+
+    <!-- Loading -->
+    <div id="loading" class="hidden">
+      <p id="loading-step">Preparing comparison…</p>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="results" class="hidden">
+      <h2 id="results-title"></h2>
+
+      <div id="filters" class="hidden">
+        <label for="genre-filter">Filter by genre:</label>
+        <select id="genre-filter">
+          <option value="all">All</option>
+        </select>
+      </div>
+
+      <p id="results-count"></p>
+      <div id="movies-grid"></div>
+    </div>
 
     <script src="{% static 'js/app.js' %}"></script>
   </body>

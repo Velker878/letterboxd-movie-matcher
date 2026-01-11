@@ -1,78 +1,116 @@
-import time, requests
+import time, requests, re
 from bs4 import BeautifulSoup
 
 BASE_URL = 'https://letterboxd.com'
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 
 def validate_usernames(usernames):
-    """Check which usernames are valid"""
-    valid, invalid = [], []
+    """Validate Letterboxd usernames and return structured results."""
+    
+    results = {
+        'valid': {},
+        'invalid': {}
+    }
+
     for username in usernames:
         url = f'{BASE_URL}/{username}/watchlist/'
         try:
-            response = requests.get(url, headers=HEADERS, timeout=10)
-            if response.status_code == 200:
-                valid.append(username)
+            response = requests.get(url, headers=HEADERS, timeout=10, allow_redirects=False)
+            status = response.status_code
+
+            if status == 200:
+                pfp_url = fetch_user_pfp(username)
+                results['valid'][username] = {
+                    "pfp": pfp_url
+                }
+            elif status == 404:
+                results['invalid'][username] = 'User not found'
+            elif status == 403:
+                results['invalid'][username] = 'Watchlist is not public'
+            elif status in (301, 302):
+                results['invalid'][username] = 'Watchlist unavailable'
             else:
-                invalid.append(username)
+                results['invalid'][username] = f'HTTP error {status}'
+
+        except requests.Timeout:
+            results['invalid'][username] = 'Request timed out'
         except requests.RequestException:
-            invalid.append(username)
+            results['invalid'][username] = 'Network error'
+        
         time.sleep(0.5)       
 
-    return valid, invalid
+    return results
+
+def fetch_user_pfp(username):
+    """Fetch the profile picture URL for a validated username (Assumes user exists and profile is accessible)"""
+    url = f'{BASE_URL}/{username}/'
+
+    try:
+        response = requests.get(url, headers=HEADERS, timeout=10)
+        
+        if response.status_code != 200:
+            return None
+        
+        soup = BeautifulSoup(response.text, 'lxml')
+        pfp_div = soup.find('div', class_='profile-avatar')
+        if not pfp_div:
+            return None
+        pfp_img = pfp_div.select_one('img')
+
+        if pfp_img and pfp_img.get('src'):
+            return pfp_img['src']
+        
+    except requests.RequestException:
+        pass
+
+    return None
 
 def scrape_watchlist(url):
-    """Scrape and parse a users watchlist into a dict."""
-    film_dict = {
-        'id': [],
-        'title': [],
-        'link': [],
-        'poster_image': [],
-        'genres': []
-    }
+    """Scrape a user's Letterboxd watchlist and return film identifiers."""
+    films = []
     page = 1
 
     while True:
         page_url = url if page == 1 else f"{url}page/{page}/"
         response = requests.get(page_url, headers=HEADERS, timeout=10)
         
+        if response.status_code != 200:
+            break
+
         soup = BeautifulSoup(response.text, "lxml")
         ul = soup.find('ul', class_='-p125')
         if not ul:
             break
 
-        films = ul.find_all('li')
-        if not films:
+        items = ul.find_all('li')
+        if not items:
             break
 
-        for li in films:
+        for li in items:
             div = li.find('div')
             if not div:
                 continue
 
-            film_id = div.get('data-film-id')
-            title = div.get('data-item-full-display-name')
-            link = div.get('data-item-link')
-            poster = div.get('data-poster-url')
+            slug = div.get('data-item-slug')
+            if not slug:
+                continue
 
-            # Fetch genres per film
-            try:
-                g_url = f"{BASE_URL}{link}genres/"
-                g_resp = requests.get(g_url, headers=HEADERS, timeout=10)
-                g_soup = BeautifulSoup(g_resp.text, "lxml")
-                g_div = g_soup.select_one('div.text-sluglist.capitalize')
-                genres = [a.text.strip() for a in g_div.find_all('a')] if g_div else []
-            except:
-                genres = []
+            raw_title = div.get('data-item-full-display-name')
+            title, year = raw_title, None            
 
-            # Add parsed data to dict
-            film_dict['id'].append(film_id)
-            film_dict['title'].append(title)
-            film_dict['link'].append(f'{BASE_URL}{link}')
-            film_dict['poster_image'].append(poster)
-            film_dict['genres'].append(genres)
+            if raw_title:
+                match = re.search(r'\((\d{4})\)\s*$', raw_title)
+                if match:
+                    year = int(match.group(1))
+                    title = raw_title[:match.start()].strip()
+
+            films.append({
+                "slug": slug,
+                "title": title,
+                "year": year,
+            })
 
         page += 1
         time.sleep(1)
     
-    return film_dict
+    return films
