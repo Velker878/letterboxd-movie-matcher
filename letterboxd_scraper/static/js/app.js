@@ -123,6 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const hasUsers = selectedUsers.size > 0;
     selectedUsersDiv.classList.toggle("hidden", !hasUsers);
+    clearUsersBtn.classList.toggle("hidden", !hasUsers);
     compareBtn.disabled = selectedUsers.size < 2;
   }
 
@@ -364,4 +365,6 @@ document.addEventListener("DOMContentLoaded", () => {
       renderMovies(commonFilms.filter((film) => film.genres.includes(value)));
     }
   });
+
+  renderUsers();
 });
