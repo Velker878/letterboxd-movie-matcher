@@ -32,7 +32,7 @@ Web app that compares Letterboxd watchlists between users and shows the movies t
    python -m venv venv
    source venv/bin/activate # Windows: venv\\Scripts\\activate
    ```
-3. Install dependencies:\
+3. Install dependencies:
    
    ```bash
    pip install -r requirements.txt
